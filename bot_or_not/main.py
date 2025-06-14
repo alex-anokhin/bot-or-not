@@ -78,6 +78,7 @@ manager = ConnectionManager()
 # Pydantic models for API requests
 class CreateRoomRequest(BaseModel):
     player_name: str
+    language: str = 'en'
 
 class JoinRoomRequest(BaseModel):
     room_id: str
@@ -108,7 +109,7 @@ async def read_root():
 @app.post("/create-room")
 async def create_game_room(request: CreateRoomRequest):
     """Create a new game room"""
-    room_id = create_room()
+    room_id = create_room(request.language)
     player_id = str(uuid.uuid4())
     
     game = get_game(room_id)
@@ -402,7 +403,7 @@ async def generate_ai_response_delayed(room_id: str):
         else:
             # Get existing responses for context (excluding AI's own if any)
             human_responses = [r for r in game.responses if r["player_id"] != game.ai_player_id]
-            ai_response = await ai_bot.generate_response(game.prompt, human_responses)
+            ai_response = await ai_bot.generate_response(game.prompt, game.language, human_responses)
         
         game.add_response(game.ai_player_id, ai_response)
         

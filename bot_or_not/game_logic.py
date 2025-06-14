@@ -2,12 +2,14 @@ import random
 import time
 from typing import Dict, List, Optional
 from datetime import datetime, timedelta
+from .prompts import get_random_prompt
 
 class GameState:
 	"""Manages the state and logic for a Bot or Not game room"""
 	
-	def __init__(self, room_id: str):
+	def __init__(self, room_id: str, language: str = 'en'):
 		self.room_id = room_id
+		self.language = language
 		self.players: List[Dict] = []
 		self.current_round = 0
 		self.phase = "waiting"  # waiting, response, voting, results, game_over
@@ -20,29 +22,6 @@ class GameState:
 		self.min_players = 2
 		self.created_at = datetime.now()
 		
-		# Game prompts
-		self.prompts = [
-			"You're a ghost haunting your old workplace. What do you do first?",
-			"You can only communicate through interpretive dance for a day. How do you order coffee?",
-			"You're stuck in an elevator with your worst enemy. What's your opening line?",
-			"You discover you can talk to animals, but they're all very gossipy. What do you learn first?",
-			"You wake up with the ability to read minds, but only your own thoughts from 10 years ago. What's the first thing you 'hear'?",
-			"You're the last person on Earth and find a working phone booth. Who do you call?",
-			"You can swap lives with anyone for 24 hours. How do you convince them it's worth it?",
-			"You're a time traveler but can only go back 37 minutes. How do you use this power?",
-			"You find a magic mirror that shows you your future self. What do you hope to see?",
-			"You can only eat one food for the rest of your life, but it has to be something you hate. What do you choose?",
-			"You have to survive a zombie apocalypse, but the zombies are all your exes. What's your survival strategy?",
-			"You can only communicate through memes for a week. How do you explain your job to someone?",
-			"You wake up one day and realize you're the main character in a sitcom. What's the first scene?",
-			"You can only speak in rhymes for a day. How do you order food at a restaurant?",
-			"You find a genie who can only grant you wishes that make your life more inconvenient. What do you wish for?",
-			"You can only wear one outfit for the rest of your life, but it has to be something you hate. What do you choose?",
-			"You can only listen to one song for the rest of your life, but it has to be a song you hate. What do you choose?",
-			"You can only watch one movie for the rest of your life, but it has to be a movie you hate. What do you choose?",
-			"You can only read one book for the rest of your life, but it has to be a book you hate. What do you choose?"
-		]
-	
 	def add_player(self, player_id: str, name: str) -> bool:
 		"""Add a player to the game if there's room"""
 		if len(self.players) >= self.max_players:
@@ -121,7 +100,7 @@ class GameState:
 	def start_response_phase(self):
 		"""Start a new response phase with a random prompt"""
 		self.phase = "response"
-		self.prompt = random.choice(self.prompts)
+		self.prompt = get_random_prompt(self.language)
 		self.responses = []
 		self.votes = []
 		self.timer_end = datetime.now() + timedelta(seconds=60)
@@ -352,6 +331,7 @@ class GameState:
 		
 		return {
 			"room_id": self.room_id,
+			"language": self.language,
 			"players": players_serializable,
 			"current_round": self.current_round,
 			"phase": self.phase,
@@ -414,13 +394,13 @@ class GameState:
 # Global game state storage
 games: Dict[str, GameState] = {}
 
-def create_room() -> str:
+def create_room(language: str = 'en') -> str:
 	"""Create a new game room with unique ID"""
 	room_id = f"{random.randint(100000, 999999)}"
 	while room_id in games:
 		room_id = f"{random.randint(100000, 999999)}"
 	
-	games[room_id] = GameState(room_id)
+	games[room_id] = GameState(room_id, language)
 	return room_id
 
 def get_game(room_id: str) -> Optional[GameState]:

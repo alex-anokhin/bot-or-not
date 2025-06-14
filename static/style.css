@@ -195,6 +195,14 @@ input[type="text"]:focus {
     border-color: #4CAF50;
 }
 
+.form-note {
+    margin-top: 1rem;
+    font-size: 0.85rem;
+    color: #666;
+    font-style: italic;
+    text-align: center;
+}
+
 /* Lobby Screen */
 .room-info {
     background: rgba(255,255,255,0.95);
@@ -687,6 +695,56 @@ textarea:focus {
     .voting-options {
         grid-template-columns: 1fr;
     }
+}
+
+/* Language Selector */
+.language-selector {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1000;
+}
+
+.language-selector select {
+    background: rgba(255, 255, 255, 0.9);
+    border: 2px solid #4CAF50;
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    backdrop-filter: blur(10px);
+}
+
+.language-form-group {
+    margin-bottom: 1rem;
+}
+
+.language-form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: #333;
+}
+
+.language-input {
+    width: 100%;
+    padding: 8px 12px;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    font-size: 1rem;
+    background: white;
+    cursor: pointer;
+}
+
+.language-input:focus {
+    outline: none;
+    border-color: #4CAF50;
+}
+
+/* Room flag display */
+#room-flag {
+    font-size: 1.2em;
+    margin-right: 0.5rem;
 }
 
 /* Utility Classes */

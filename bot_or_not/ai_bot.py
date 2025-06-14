@@ -34,7 +34,7 @@ class AIBot:
                 print(f"Failed to initialize OpenAI client: {e}")
                 raise
     
-    async def generate_response(self, prompt: str, other_responses: List[Dict] = None) -> str:
+    async def generate_response(self, prompt: str, language: str = 'en', other_responses: List[Dict] = None) -> str:
         """Generate a human-like response to the game prompt"""
         
         try:
@@ -42,6 +42,18 @@ class AIBot:
             
             # Select a random personality for this response
             personality = random.choice(self.personality_traits)
+            
+            # Language-specific instructions
+            language_instructions = {
+                'en': "Respond in English. Use casual, natural language with maybe some slang or informal grammar.",
+                'de': "Antworte auf Deutsch. Verwende natürliche, umgangssprachliche Sprache.",
+                'es': "Responde en español. Usa lenguaje casual y natural.",
+                'fr': "Réponds en français. Utilise un langage naturel et décontracté.",
+                'ru': "Отвечай на русском языке. Используй естественный, разговорный язык.",
+                'it': "Rispondi in italiano. Usa un linguaggio naturale e colloquiale."
+            }
+            
+            lang_instruction = language_instructions.get(language, language_instructions['en'])
             
             # Build context with other responses if available
             context = ""
@@ -53,19 +65,19 @@ class AIBot:
             system_prompt = f"""You are playing a social deduction game called "Bot or Not" where humans try to identify the AI player. 
             Your goal is to blend in with human players by giving creative, natural responses that sound human-written.
             
+            {lang_instruction}
             Be {personality} in your response style.
-            Keep responses between 140-180 characters.
+            Keep responses concise (one sentence, 5-15 words).
             Be creative, personal, and slightly imperfect like a real human would be.
             Avoid being too polished or obviously AI-generated.
-            Use casual language, maybe include a typo or informal grammar occasionally.
             Reference real human experiences and emotions.{context}"""
             
             user_prompt = f"""Respond to this prompt as if you're a human player: "{prompt}"
 
-            Remember: one sentence from 5 to 10 words, sound human, be creative and personal."""
+            Remember: respond in {language}, be concise (5-15 words), sound human, be creative and personal."""
 
             response = await self.client.chat.completions.create(
-                model="gpt-4.1-mini",
+                model="gpt-4o-mini",
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_prompt}
@@ -77,50 +89,51 @@ class AIBot:
             )
             
             ai_response = response.choices[0].message.content.strip()
-            
-            # Ensure response is within character limit
-            # if len(ai_response) > 180:
-            #     ai_response = ai_response[:177] + "..."
-            # elif len(ai_response) < 140:
-            #     # If too short, add some casual filler
-            #     fillers = [" lol", " haha", " honestly", " tbh", " ngl"]
-            #     while len(ai_response) < 20 and len(ai_response) < 100:
-            #         filler = random.choice(fillers)
-            #         if len(ai_response + filler) <= 120:
-            #             ai_response += filler
-            #         else:
-            #             break
-            
             return ai_response
             
         except Exception as e:
             print(f"OpenAI API error: {e}")
             # Fallback responses if OpenAI API fails
-            return self._get_fallback_response(prompt)
+            return self._get_fallback_response(prompt, language)
     
-    def _get_fallback_response(self, prompt: str) -> str:
+    def _get_fallback_response(self, prompt: str, language: str = 'en') -> str:
         """Get fallback response when OpenAI API fails"""
+        
         fallback_responses = {
-            "ghost": "I'd probably mess with the coffee machine first... classic ghost move right? 😅",
-            "dance": "Point dramatically at the menu, do some aggressive gestures, hope for the best lol",
-            "elevator": "So... this is awkward. Want to talk about the weather or just stare at the floor?", 
-            "animals": "Apparently my neighbor's cat thinks I'm a disappointment. The squirrels agree. 🐿️"
+            'en': [
+                "Honestly, that's a tough one... probably something really weird knowing me 😂",
+                "Oh man, I'd probably overthink it and end up doing something completely random lol",
+                "Classic me would find a way to make this situation even weirder somehow 🤷‍♀️"
+            ],
+            'de': [
+                "Ehrlich gesagt, das ist schwierig... wahrscheinlich etwas wirklich Seltsames 😂",
+                "Oh Mann, ich würde wahrscheinlich zu viel nachdenken und etwas Zufälliges machen lol",
+                "Typisch ich würde es schaffen, die Situation noch seltsamer zu machen 🤷‍♀️"
+            ],
+            'es': [
+                "Honestamente, eso es difícil... probablemente algo realmente raro 😂",
+                "Oh hombre, probablemente pensaría demasiado y haría algo aleatorio lol",
+                "Típico de mí encontrar una manera de hacer la situación aún más rara 🤷‍♀️"
+            ],
+            'fr': [
+                "Honnêtement, c'est difficile... probablement quelque chose de vraiment bizarre 😂",
+                "Oh mec, je réfléchirais trop et finirais par faire quelque chose de random lol",
+                "Typique de moi de trouver un moyen de rendre la situation encore plus bizarre 🤷‍♀️"
+            ],
+            'ru': [
+                "Честно говоря, это сложно... наверное что-то очень странное 😂",
+                "Ох, я бы наверное слишком много думал и сделал что-то случайное лол",
+                "Типично для меня - найти способ сделать ситуацию еще более странной 🤷‍♀️"
+            ],
+            'it': [
+                "Onestamente, è difficile... probabilmente qualcosa di davvero strano 😂",
+                "Oh cavolo, probabilmente ci penserei troppo e farei qualcosa di casuale lol",
+                "Tipico di me trovare un modo per rendere la situazione ancora più strana 🤷‍♀️"
+            ]
         }
         
-        # Try to match a fallback response to the prompt
-        prompt_lower = prompt.lower()
-        for key, response in fallback_responses.items():
-            if key in prompt_lower:
-                return response
-        
-        # Generic fallback
-        generic_fallbacks = [
-            "Honestly, that's a tough one... probably something really weird knowing me 😂",
-            "Oh man, I'd probably overthink it and end up doing something completely random lol",
-            "Classic me would find a way to make this situation even weirder somehow 🤷‍♀️"
-        ]
-        
-        return random.choice(generic_fallbacks)
+        responses = fallback_responses.get(language, fallback_responses['en'])
+        return random.choice(responses)
     
     def should_vote_kick(self, target_response: str, all_responses: List[Dict]) -> bool:
         """Simple heuristic for AI to decide whether to vote kick someone"""

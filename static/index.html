@@ -3,38 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bot or Not - Social Deduction Game</title>
+    <title data-i18n="meta.title">Bot or Not - Social Deduction Game</title>
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
     <div id="app">
+        <!-- Language Selector -->
+        <div id="language-selector" class="language-selector">
+            <select id="language-select">
+                <!-- Languages will be populated by JavaScript -->
+            </select>
+        </div>
+
         <!-- Welcome Screen -->
         <div id="welcome-screen" class="screen active">
             <div class="container">
-                <h1>🤖 Bot or Not</h1>
-                <p class="subtitle">Can you spot the AI among your friends?</p>
+                <h1 data-i18n="welcome.title">🤖 Bot or Not</h1>
+                <p class="subtitle" data-i18n="welcome.subtitle">Can you spot the AI among your friends?</p>
                 <div class="game-info">
-                    <p>👥 2-8 players • 🎯 Find the AI • 💭 Creative responses</p>
+                    <p data-i18n="welcome.gameInfo">👥 2-8 players • 🎯 Find the AI • 💭 Creative responses</p>
                 </div>
                 <div class="game-rules">
-                    <h3>How to Play:</h3>
-                    <ul>
-                        <li>🤖 One AI player joins 2-8 humans in each game</li>
-                        <li>📝 Everyone responds to creative prompts (140-180 characters)</li>
-                        <li>🗳️ Vote to eliminate the most suspicious player each round</li>
-                        <li>🏆 Humans win by finding the AI • AI wins by reaching final 2</li>
-                        <li>⏱️ Each round: 60s to respond + 60s to vote</li>
+                    <h3 data-i18n="welcome.howToPlay">How to Play:</h3>
+                    <ul id="game-rules-list">
+                        <!-- Rules will be populated by JavaScript -->
                     </ul>
                 </div>
                 <div class="action-buttons">
-                    <button id="create-room-btn" class="btn btn-primary">Create Room</button>
-                    <button id="join-room-btn" class="btn btn-secondary">Join Room</button>
+                    <button id="create-room-btn" class="btn btn-primary" data-i18n="welcome.createRoom">Create Room</button>
+                    <button id="join-room-btn" class="btn btn-secondary" data-i18n="welcome.joinRoom">Join Room</button>
                 </div>
                 
                 <div id="player-form" class="form-section hidden">
-                    <input type="text" id="player-name" placeholder="Enter your name" maxlength="20" autocomplete="off">
-                    <input type="text" id="room-code" placeholder="Enter room code (e.g., 123456)" maxlength="15" autocomplete="off">
-                    <button id="submit-player" class="btn btn-primary">Continue</button>
+                    <input type="text" id="player-name" data-i18n="form.enterName" placeholder="Enter your name" maxlength="20" autocomplete="off">
+                    <input type="text" id="room-code" data-i18n="form.enterRoomCode" placeholder="Enter room code (e.g., 123456)" maxlength="15" autocomplete="off">
+                    <button id="submit-player" class="btn btn-primary" data-i18n="form.continue">Continue</button>
+                    <p class="form-note" data-i18n="form.languageNote">Game language will match your interface language</p>
                 </div>
             </div>
         </div>
@@ -42,20 +46,23 @@
         <!-- Lobby Screen -->
         <div id="lobby-screen" class="screen">
             <div class="container">
-                <h2>Game Lobby</h2>
+                <h2 data-i18n="lobby.title">Game Lobby</h2>
                 <div class="room-info">
-                    <h3>Share this room code with friends:</h3>
+                    <h3>
+                        <span id="room-flag">🌐</span>
+                        <span data-i18n="lobby.shareCode">Share this room code with friends:</span>
+                    </h3>
                     <div class="room-code">
                         <span id="display-room-code" class="code">Loading...</span>
-                        <button id="copy-code" class="btn btn-small">📋 Copy</button>
+                        <button id="copy-code" class="btn btn-small" data-i18n="lobby.copy">📋 Copy</button>
                     </div>
-                    <p class="share-instruction">
+                    <p class="share-instruction" data-i18n="lobby.shareInstruction">
                         Friends can join by clicking "Join Room" on the main page and entering this code.
                     </p>
                 </div>
                 
                 <div class="players-section">
-                    <h3>Players (<span id="player-count">0</span>/6)</h3>
+                    <h3><span data-i18n="lobby.playersCount">Players</span> (<span id="player-count">0</span>/8)</h3>
                     <div id="players-list" class="players-grid">
                         <!-- Players will be populated here -->
                     </div>
@@ -63,10 +70,10 @@
                 
                 <div class="lobby-actions">
                     <div class="lobby-buttons">
-                        <button id="start-game" class="btn btn-primary" disabled>Start Game</button>
-                        <button id="leave-room" class="btn btn-secondary" style="display: none;">Leave Room</button>
+                        <button id="start-game" class="btn btn-primary" disabled data-i18n="lobby.startGame">Start Game</button>
+                        <button id="leave-room" class="btn btn-secondary" style="display: none;" data-i18n="lobby.leaveRoom">Leave Room</button>
                     </div>
-                    <p class="min-players">Need at least 2 players to start</p>
+                    <p class="min-players" data-i18n="lobby.needPlayers">Need at least 2 players to start</p>
                 </div>
             </div>
         </div>
@@ -91,31 +98,32 @@
                 <!-- Game Content -->
                 <div id="response-phase" class="game-phase">
                     <div class="prompt-section">
-                        <h3>Prompt:</h3>
+                        <h3 data-i18n="game.prompt">Prompt:</h3>
                         <p id="game-prompt" class="prompt-text"></p>
                     </div>
                     
                     <div class="response-section">
                         <textarea 
                             id="response-input" 
+                            data-i18n="game.placeholder"
                             placeholder="Type your response here..." 
                             maxlength="180"
                             rows="3"></textarea>
                         <div class="char-counter">
-                            <span id="char-count">0</span>/180 characters
+                            <span id="char-count">0</span>/180 <span data-i18n="game.characters">characters</span>
                         </div>
-                        <button id="submit-response" class="btn btn-primary">Submit Response</button>
+                        <button id="submit-response" class="btn btn-primary" data-i18n="game.submitResponse">Submit Response</button>
                     </div>
 
                     <div class="responses-waiting">
-                        <p>Waiting for other players...</p>
+                        <p data-i18n="game.waitingForPlayers">Waiting for other players...</p>
                         <div id="responses-status" class="responses-status"></div>
                     </div>
                 </div>
 
                 <div id="voting-phase" class="game-phase hidden">
                     <div class="voting-header">
-                        <h3>Voting Phase</h3>
+                        <h3 data-i18n="game.votingPhaseHeader">Voting Phase</h3>
                         <p>Read the responses and vote to KICK the player you think is the AI</p>
                     </div>
                     
@@ -129,7 +137,7 @@
 
                 <div id="results-phase" class="game-phase hidden">
                     <div class="results-header">
-                        <h3>Round Results</h3>
+                        <h3 data-i18n="game.resultsHeader">Round Results</h3>
                     </div>
                     <div id="results-content" class="results-content"></div>
                 </div>
@@ -143,8 +151,8 @@
                     <h2 id="winner-announcement"></h2>
                     <div id="final-results" class="final-results"></div>
                     <div class="game-over-actions">
-                        <button id="new-game" class="btn btn-primary">New Game (Same Room)</button>
-                        <button id="leave-room-final" class="btn btn-secondary">Leave Room</button>
+                        <button id="new-game" class="btn btn-primary" data-i18n="gameOver.newGameSameRoom">New Game (Same Room)</button>
+                        <button id="leave-room-final" class="btn btn-secondary" data-i18n="gameOver.leaveRoom">Leave Room</button>
                     </div>
                 </div>
             </div>
@@ -160,6 +168,7 @@
         <p>Loading...</p>
     </div>
 
+    <script src="/static/i18n.js"></script>
     <script src="/static/script.js"></script>
 </body>
 </html>
