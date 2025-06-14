@@ -14,9 +14,18 @@
                 <h1>🤖 Bot or Not</h1>
                 <p class="subtitle">Can you spot the AI among your friends?</p>
                 <div class="game-info">
-                    <p>👥 4-6 players • 🎯 Find the AI • 💭 Creative responses</p>
+                    <p>👥 2-8 players • 🎯 Find the AI • 💭 Creative responses</p>
                 </div>
-                
+                <div class="game-rules">
+                    <h3>How to Play:</h3>
+                    <ul>
+                        <li>🤖 One AI player joins 2-8 humans in each game</li>
+                        <li>📝 Everyone responds to creative prompts (140-180 characters)</li>
+                        <li>🗳️ Vote to eliminate the most suspicious player each round</li>
+                        <li>🏆 Humans win by finding the AI • AI wins by reaching final 2</li>
+                        <li>⏱️ Each round: 60s to respond + 60s to vote</li>
+                    </ul>
+                </div>
                 <div class="action-buttons">
                     <button id="create-room-btn" class="btn btn-primary">Create Room</button>
                     <button id="join-room-btn" class="btn btn-secondary">Join Room</button>
@@ -24,7 +33,7 @@
                 
                 <div id="player-form" class="form-section hidden">
                     <input type="text" id="player-name" placeholder="Enter your name" maxlength="20" autocomplete="off">
-                    <input type="text" id="room-code" placeholder="Enter room code (e.g., room_123456)" maxlength="15" autocomplete="off">
+                    <input type="text" id="room-code" placeholder="Enter room code (e.g., 123456)" maxlength="15" autocomplete="off">
                     <button id="submit-player" class="btn btn-primary">Continue</button>
                 </div>
             </div>

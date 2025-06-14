@@ -285,9 +285,9 @@ games: Dict[str, GameState] = {}
 
 def create_room() -> str:
     """Create a new game room with unique ID"""
-    room_id = f"room_{random.randint(100000, 999999)}"
+    room_id = f"{random.randint(100000, 999999)}"
     while room_id in games:
-        room_id = f"room_{random.randint(100000, 999999)}"
+        room_id = f"{random.randint(100000, 999999)}"
     
     games[room_id] = GameState(room_id)
     return room_id

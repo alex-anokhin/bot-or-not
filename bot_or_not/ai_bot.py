@@ -61,11 +61,11 @@ class AIBot:
             Reference real human experiences and emotions.{context}"""
             
             user_prompt = f"""Respond to this prompt as if you're a human player: "{prompt}"
-            
-            Remember: 140-180 characters, sound human, be creative and personal."""
-            
+
+            Remember: one sentence from 5 to 10 words, sound human, be creative and personal."""
+
             response = await self.client.chat.completions.create(
-                model="gpt-3.5-turbo",
+                model="gpt-4.1-mini",
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_prompt}
@@ -79,17 +79,17 @@ class AIBot:
             ai_response = response.choices[0].message.content.strip()
             
             # Ensure response is within character limit
-            if len(ai_response) > 180:
-                ai_response = ai_response[:177] + "..."
-            elif len(ai_response) < 140:
-                # If too short, add some casual filler
-                fillers = [" lol", " haha", " honestly", " tbh", " ngl"]
-                while len(ai_response) < 140 and len(ai_response) < 175:
-                    filler = random.choice(fillers)
-                    if len(ai_response + filler) <= 180:
-                        ai_response += filler
-                    else:
-                        break
+            # if len(ai_response) > 180:
+            #     ai_response = ai_response[:177] + "..."
+            # elif len(ai_response) < 140:
+            #     # If too short, add some casual filler
+            #     fillers = [" lol", " haha", " honestly", " tbh", " ngl"]
+            #     while len(ai_response) < 20 and len(ai_response) < 100:
+            #         filler = random.choice(fillers)
+            #         if len(ai_response + filler) <= 120:
+            #             ai_response += filler
+            #         else:
+            #             break
             
             return ai_response
             

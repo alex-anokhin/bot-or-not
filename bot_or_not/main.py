@@ -134,7 +134,7 @@ async def join_game_room(request: JoinRoomRequest):
         if not room_id.startswith("room_"):
             # If user just entered the number part, add the prefix
             if room_id.isdigit():
-                room_id = f"room_{room_id}"
+                room_id = f"{room_id}"
             else:
                 raise HTTPException(status_code=400, detail="Invalid room code format")
         
@@ -481,7 +481,9 @@ def main():
     host = os.getenv("HOST", "0.0.0.0")
     port = int(os.getenv("PORT", 8000))
     
-    uvicorn.run(app, host=host, port=port)
+    print(f"Starting server on {host}:{port}")
+    
+    uvicorn.run(app, host=host, port=port, reload=False)
 
 if __name__ == "__main__":
     main()

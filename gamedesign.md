@@ -1,22 +1,22 @@
 # Bot or Not - Game Design Document
 
 ## Core Concept
-**Players:** 4-8 total (3-7 humans + 1 AI)  
+**Players:** 2-8 total (2-8 humans + 1 AI)  
 **Objective:** Social deduction game where humans try to identify and eliminate the AI before it reaches the final 2 players.
 
 ### Player Count Analysis
 
-**Minimum: 4 players (3H + 1AI)**
+**Minimum: 2 players (2H + 1AI)**
 - **Pros:** Fast games, easier lobbies, good for testing
-- **Cons:** Very short (max 2 rounds), limited discussion, easier for AI to hide
+- **Cons:** Very short (1 rounds), limited discussion, easier for AI to hide
 - **Verdict:** Good for MVP testing, casual quick games
 
-**Sweet Spot: 5-6 players (4-5H + 1AI)**
-- **Pros:** 3-4 rounds of gameplay, enough variety in responses, manageable discussion
+**Sweet Spot: 3-5 players (3-5H + 1AI)**
+- **Pros:** 2-4 rounds of gameplay, enough variety in responses, manageable discussion
 - **Cons:** Still relatively short games
 - **Verdict:** Ideal for MVP launch
 
-**Maximum: 8 players (7H + 1AI)**
+**Maximum: 8 players (8H + 1AI)**
 - **Pros:** 6+ rounds, rich discussion, harder for AI to blend, more strategic depth
 - **Cons:** Longer lobby wait times, potential chaos in voting phase, harder moderation
 - **Verdict:** Good for engaged player groups, post-MVP feature

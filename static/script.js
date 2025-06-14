@@ -502,8 +502,8 @@ class BotOrNotGame {
                 responseDiv.classList.add('clickable');
                 responseDiv.innerHTML = `
                     <div class="response-text">${response.text}</div>
-                    <div class="response-author">Response ${index + 1} by ${playerName}</div>
-                    <div class="vote-hint">Click to vote KICK</div>
+                    <!-- <div class="response-author">Response ${index + 1} by ${playerName}</div> -->
+                    <!-- <div class="vote-hint">Click to vote KICK</div> -->
                 `;
                 
                 responseDiv.addEventListener('click', () => {
@@ -657,9 +657,9 @@ class BotOrNotGame {
             const type = player.is_ai ? '🤖 AI' : '👤 Human';
             const displayName = player.display_name || player.name;
             const realName = player.name;
-            const nameDisplay = displayName !== realName ? `${displayName} (${realName})` : displayName;
-            
-            resultsHTML += `<p><strong>${nameDisplay}</strong> - ${type} - ${status}</p>`;
+            const nameDisplay = displayName !== realName ? `${displayName} - ${realName}` : displayName;
+
+            resultsHTML += `<p><strong>${nameDisplay}</strong>: <span style="color: ${player.is_ai ? '#f44336' : '#4CAF50'}; display: inline-block;">${type} - ${status}</span></p>`;
         });
         
         finalResults.innerHTML = resultsHTML;
