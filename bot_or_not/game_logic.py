@@ -237,6 +237,27 @@ class GameState:
             eliminated_player = self.get_player(eliminated_player_id)
             if eliminated_player:
                 eliminated_player["alive"] = False
+                # Create a clean serializable copy of the eliminated player
+                eliminated_player_copy = {
+                    "id": eliminated_player["id"],
+                    "name": eliminated_player["name"],
+                    "is_ai": eliminated_player["is_ai"],
+                    "alive": eliminated_player["alive"]
+                }
+                # Add other fields that might exist, ensuring datetime conversion
+                if "joined_at" in eliminated_player:
+                    if hasattr(eliminated_player["joined_at"], 'isoformat'):
+                        eliminated_player_copy["joined_at"] = eliminated_player["joined_at"].isoformat()
+                    else:
+                        eliminated_player_copy["joined_at"] = eliminated_player["joined_at"]
+                
+                if "anonymous_number" in eliminated_player:
+                    eliminated_player_copy["anonymous_number"] = eliminated_player["anonymous_number"]
+                
+                if "display_name" in eliminated_player:
+                    eliminated_player_copy["display_name"] = eliminated_player["display_name"]
+                
+                eliminated_player = eliminated_player_copy
         
         self.phase = "results"
         

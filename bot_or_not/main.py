@@ -272,13 +272,6 @@ async def submit_vote(request: SubmitVoteRequest):
         if game.can_advance_to_results():
             results = game.calculate_round_results()
             
-            # Ensure results are serializable
-            if results.get("eliminated_player"):
-                eliminated_player = results["eliminated_player"].copy()
-                if "joined_at" in eliminated_player:
-                    eliminated_player["joined_at"] = eliminated_player["joined_at"].isoformat()
-                results["eliminated_player"] = eliminated_player
-            
             await manager.broadcast_to_room(
                 json.dumps({
                     "type": "round_results",
@@ -401,15 +394,19 @@ async def generate_ai_vote_delayed(room_id: str):
         if target_id:
             game.add_vote(game.ai_player_id, target_id, "kick")
             
+            # Get serializable game state
+            game_state = game.get_game_state_dict()
+            
             # Check if we can advance to results
             if game.can_advance_to_results():
                 results = game.calculate_round_results()
                 
+                # Results are already properly serialized from calculate_round_results
                 await manager.broadcast_to_room(
                     json.dumps({
                         "type": "round_results",
                         "results": results,
-                        "game_state": game.get_game_state_dict()
+                        "game_state": game_state
                     }),
                     room_id
                 )
@@ -419,7 +416,7 @@ async def generate_ai_vote_delayed(room_id: str):
                 await manager.broadcast_to_room(
                     json.dumps({
                         "type": "vote_received",
-                        "game_state": game.get_game_state_dict()
+                        "game_state": game_state
                     }),
                     room_id
                 )
@@ -434,30 +431,33 @@ async def advance_round_delayed(room_id: str):
     if not game:
         return
     
-    winner = game.check_win_condition()
-    if winner:
-        game.phase = "game_over"
-        await manager.broadcast_to_room(
-            json.dumps({
-                "type": "game_over",
-                "winner": winner,
-                "game_state": game.get_game_state_dict()
-            }),
-            room_id
-        )
-    else:
-        # Start next round
-        game.next_round()
-        await manager.broadcast_to_room(
-            json.dumps({
-                "type": "new_round",
-                "game_state": game.get_game_state_dict()
-            }),
-            room_id
-        )
-        
-        # Generate AI response for new round
-        asyncio.create_task(generate_ai_response_delayed(room_id))
+    try:
+        winner = game.check_win_condition()
+        if winner:
+            game.phase = "game_over"
+            await manager.broadcast_to_room(
+                json.dumps({
+                    "type": "game_over",
+                    "winner": winner,
+                    "game_state": game.get_game_state_dict()
+                }),
+                room_id
+            )
+        else:
+            # Start next round
+            game.next_round()
+            await manager.broadcast_to_room(
+                json.dumps({
+                    "type": "new_round",
+                    "game_state": game.get_game_state_dict()
+                }),
+                room_id
+            )
+            
+            # Generate AI response for new round
+            asyncio.create_task(generate_ai_response_delayed(room_id))
+    except Exception as e:
+        logger.error(f"Error advancing round: {e}")
 
 # Cleanup task
 @app.on_event("startup")

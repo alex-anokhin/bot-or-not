@@ -369,7 +369,7 @@ class BotOrNotGame {
             responseDiv.className = 'response-item clickable';
             responseDiv.innerHTML = `
                 <div class="response-text">${response.text}</div>
-                <div class="response-author">Response ${index + 1} by ${playerName}</div>
+                <div class="response-author">Response ${index + 1}</div>
                 <div class="vote-hint">Click to vote KICK</div>
             `;
             
