@@ -301,6 +301,65 @@ async def submit_vote(request: SubmitVoteRequest):
         logger.error(f"Unexpected error in submit_vote: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
+@app.post("/leave-room")
+async def leave_room(request: dict):
+    """Remove player from room"""
+    room_id = request.get("room_id")
+    player_id = request.get("player_id")
+    
+    if not room_id or not player_id:
+        raise HTTPException(status_code=400, detail="room_id and player_id are required")
+    
+    game = get_game(room_id)
+    if not game:
+        raise HTTPException(status_code=404, detail="Room not found")
+    
+    success = game.remove_player(player_id)
+    if not success:
+        raise HTTPException(status_code=400, detail="Player not found in room")
+    
+    # Broadcast player left to remaining players
+    await manager.broadcast_to_room(
+        json.dumps({
+            "type": "player_left",
+            "game_state": game.get_game_state_dict()
+        }),
+        room_id,
+        exclude_player=player_id
+    )
+    
+    # Close WebSocket connection for the leaving player
+    manager.disconnect(room_id, player_id)
+    
+    return {"success": True}
+
+@app.post("/reset-room")
+async def reset_room(request: dict):
+    """Reset room to lobby state for new game"""
+    room_id = request.get("room_id")
+    
+    if not room_id:
+        raise HTTPException(status_code=400, detail="room_id is required")
+    
+    game = get_game(room_id)
+    if not game:
+        raise HTTPException(status_code=404, detail="Room not found")
+    
+    success = game.reset_to_lobby()
+    if not success:
+        raise HTTPException(status_code=400, detail="Cannot reset room")
+    
+    # Broadcast room reset to all players
+    await manager.broadcast_to_room(
+        json.dumps({
+            "type": "room_reset",
+            "game_state": game.get_game_state_dict()
+        }),
+        room_id
+    )
+    
+    return {"success": True, "game_state": game.get_game_state_dict()}
+
 # WebSocket endpoint
 @app.websocket("/ws/{room_id}/{player_id}")
 async def websocket_endpoint(websocket: WebSocket, room_id: str, player_id: str):

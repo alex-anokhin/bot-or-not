@@ -365,6 +365,51 @@ class GameState:
 			"alive_players": len(self.get_alive_players())
 		}
 
+	def remove_player(self, player_id: str) -> bool:
+		"""Remove a player from the game"""
+		if self.phase != "waiting":
+			# During active game, just mark as disconnected
+			player = self.get_player(player_id)
+			if player:
+				player["disconnected"] = True
+				return True
+			return False
+		
+		# In lobby, completely remove the player
+		initial_count = len(self.players)
+		self.players = [p for p in self.players if p["id"] != player_id]
+		
+		# If AI player left, clear AI player ID
+		if player_id == self.ai_player_id:
+			self.ai_player_id = None
+		
+		return len(self.players) < initial_count
+	
+	def reset_to_lobby(self) -> bool:
+		"""Reset game state back to lobby"""
+		if self.phase == "waiting":
+			return True  # Already in lobby
+		
+		# Reset all players to alive and remove AI
+		human_players = [p for p in self.players if not p["is_ai"] and not p.get("disconnected", False)]
+		for player in human_players:
+			player["alive"] = True
+			if "anonymous_number" in player:
+				del player["anonymous_number"]
+			if "display_name" in player:
+				del player["display_name"]
+		
+		self.players = human_players
+		self.current_round = 0
+		self.phase = "waiting"
+		self.prompt = ""
+		self.responses = []
+		self.votes = []
+		self.ai_player_id = None
+		self.timer_end = None
+		
+		return True
+
 
 # Global game state storage
 games: Dict[str, GameState] = {}

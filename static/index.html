@@ -62,8 +62,11 @@
                 </div>
                 
                 <div class="lobby-actions">
-                    <button id="start-game" class="btn btn-primary" disabled>Start Game</button>
-                    <p class="min-players">Need at least 4 players to start</p>
+                    <div class="lobby-buttons">
+                        <button id="start-game" class="btn btn-primary" disabled>Start Game</button>
+                        <button id="leave-room" class="btn btn-secondary" style="display: none;">Leave Room</button>
+                    </div>
+                    <p class="min-players">Need at least 2 players to start</p>
                 </div>
             </div>
         </div>
@@ -140,7 +143,8 @@
                     <h2 id="winner-announcement"></h2>
                     <div id="final-results" class="final-results"></div>
                     <div class="game-over-actions">
-                        <button id="new-game" class="btn btn-primary">New Game</button>
+                        <button id="new-game" class="btn btn-primary">New Game (Same Room)</button>
+                        <button id="leave-room-final" class="btn btn-secondary">Leave Room</button>
                     </div>
                 </div>
             </div>

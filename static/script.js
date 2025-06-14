@@ -7,9 +7,10 @@ class BotOrNotGame {
         this.roomId = null;
         this.websocket = null;
         this.timer = null;
+        this.playerName = null;
         
         this.initializeEventListeners();
-        this.showScreen('welcome-screen');
+        this.loadSessionData();
         
         // Debug: Check screen states periodically
         if (window.location.search.includes('debug')) {
@@ -17,6 +18,96 @@ class BotOrNotGame {
                 const activeScreens = document.querySelectorAll('.screen.active');
                 console.log('Active screens:', Array.from(activeScreens).map(s => s.id));
             }, 2000);
+        }
+    }
+    
+    loadSessionData() {
+        // Try to restore session from localStorage
+        const savedSession = localStorage.getItem('botOrNotSession');
+        if (savedSession) {
+            try {
+                const session = JSON.parse(savedSession);
+                this.playerId = session.playerId;
+                this.roomId = session.roomId;
+                this.playerName = session.playerName;
+                
+                // Try to reconnect to the game
+                this.reconnectToGame();
+            } catch (error) {
+                console.error('Failed to restore session:', error);
+                this.clearSession();
+                this.showScreen('welcome-screen');
+            }
+        } else {
+            this.showScreen('welcome-screen');
+        }
+    }
+    
+    saveSessionData() {
+        if (this.playerId && this.roomId && this.playerName) {
+            const session = {
+                playerId: this.playerId,
+                roomId: this.roomId,
+                playerName: this.playerName
+            };
+            localStorage.setItem('botOrNotSession', JSON.stringify(session));
+        }
+    }
+    
+    clearSession() {
+        localStorage.removeItem('botOrNotSession');
+        this.playerId = null;
+        this.roomId = null;
+        this.playerName = null;
+    }
+    
+    async reconnectToGame() {
+        if (!this.roomId || !this.playerId) {
+            this.showScreen('welcome-screen');
+            return;
+        }
+        
+        this.showLoading(true);
+        try {
+            // Check if room still exists and player is still in it
+            const response = await fetch(`/room/${this.roomId}`);
+            if (!response.ok) {
+                throw new Error('Room no longer exists');
+            }
+            
+            const gameState = await response.json();
+            const playerExists = gameState.players.find(p => p.id === this.playerId);
+            
+            if (!playerExists) {
+                throw new Error('Player no longer in room');
+            }
+            
+            this.gameState = gameState;
+            this.connectWebSocket();
+            
+            // Navigate to appropriate screen based on game state
+            if (gameState.phase === 'waiting') {
+                this.showLobby();
+            } else if (gameState.phase === 'game_over') {
+                this.showGameOver(gameState.winner);
+            } else {
+                this.showGame();
+                if (gameState.phase === 'voting') {
+                    this.showVotingPhase();
+                } else if (gameState.phase === 'results') {
+                    this.showResults({ /* results from gameState */ });
+                }
+                this.startTimer();
+            }
+            
+            this.showToast('Reconnected to game', 'success');
+        } catch (error) {
+            console.error('Reconnection failed:', error);
+            this.clearSession();
+            this.showScreen('welcome-screen');
+            this.showToast('Could not reconnect to previous game', 'warning');
+        } finally {
+            this.showLoading(false);
         }
     }
     
@@ -43,6 +134,10 @@ class BotOrNotGame {
             this.startGame();
         });
         
+        document.getElementById('leave-room').addEventListener('click', () => {
+            this.leaveRoom();
+        });
+        
         // Game screen
         document.getElementById('response-input').addEventListener('input', () => {
             this.updateCharacterCount();
@@ -54,7 +149,11 @@ class BotOrNotGame {
         
         // Game over screen
         document.getElementById('new-game').addEventListener('click', () => {
-            this.resetGame();
+            this.startNewGameInRoom();
+        });
+        
+        document.getElementById('leave-room-final').addEventListener('click', () => {
+            this.leaveRoom();
         });
         
         // Enter key handling
@@ -64,6 +163,11 @@ class BotOrNotGame {
         
         document.getElementById('room-code').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') this.handlePlayerSubmit();
+        });
+        
+        // Handle page refresh/close
+        window.addEventListener('beforeunload', () => {
+            this.saveSessionData();
         });
     }
     
@@ -146,14 +250,13 @@ class BotOrNotGame {
         const data = await response.json();
         this.roomId = data.room_id;
         this.playerId = data.player_id;
+        this.playerName = playerName;
         this.gameState = data.game_state;
         
-        console.log('Room created:', data); // Debug log
-        console.log('About to show lobby...'); // Debug log
-        
-        this.showLoading(false); // Hide loading first
+        this.saveSessionData();
+        this.showLoading(false);
         this.connectWebSocket();
-        this.showLobby(); // This should switch to lobby
+        this.showLobby();
         this.showToast(`Room created! Code: ${this.roomId}`, 'success');
     }
 
@@ -174,7 +277,6 @@ class BotOrNotGame {
                     const error = await response.json();
                     errorMessage = error.detail || errorMessage;
                 } catch (e) {
-                    // If response is not JSON (like HTML error page), get status text
                     errorMessage = `Server error: ${response.status} ${response.statusText}`;
                 }
                 throw new Error(errorMessage);
@@ -183,10 +285,10 @@ class BotOrNotGame {
             const data = await response.json();
             this.roomId = data.room_id;
             this.playerId = data.player_id;
+            this.playerName = playerName;
             this.gameState = data.game_state;
             
-            console.log('Room joined:', data); // Debug log
-            
+            this.saveSessionData();
             this.connectWebSocket();
             this.showLobby();
             this.showLoading(false);
@@ -195,6 +297,70 @@ class BotOrNotGame {
         } catch (error) {
             console.error('Join room error:', error);
             throw error;
+        }
+    }
+
+    async leaveRoom() {
+        if (!this.roomId || !this.playerId) return;
+        
+        try {
+            // Notify server that player is leaving
+            await fetch('/leave-room', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    room_id: this.roomId,
+                    player_id: this.playerId
+                })
+            });
+        } catch (error) {
+            console.error('Error leaving room:', error);
+        }
+        
+        // Close websocket and clear session
+        if (this.websocket) {
+            this.websocket.close();
+            this.websocket = null;
+        }
+        
+        this.clearTimer();
+        this.hideSpectatorMode();
+        this.clearSession();
+        
+        // Reset form and return to welcome
+        document.getElementById('player-name').value = '';
+        document.getElementById('room-code').value = '';
+        document.getElementById('player-form').classList.add('hidden');
+        
+        this.showScreen('welcome-screen');
+        this.showToast('Left the room', 'info');
+    }
+    
+    async startNewGameInRoom() {
+        if (!this.roomId) return;
+        
+        try {
+            const response = await fetch('/reset-room', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ room_id: this.roomId })
+            });
+            
+            if (!response.ok) {
+                throw new Error('Failed to reset room');
+            }
+            
+            const data = await response.json();
+            this.gameState = data.game_state;
+            
+            this.clearTimer();
+            this.hideSpectatorMode();
+            this.showLobby();
+            this.showToast('Room reset! Ready for a new game', 'success');
+            
+        } catch (error) {
+            console.error('Failed to reset room:', error);
+            this.showToast('Failed to start new game', 'error');
         }
     }
 
@@ -288,12 +454,6 @@ class BotOrNotGame {
             return;
         }
         
-        console.log('Updating lobby with state:', this.gameState); // Debug log
-        
-        // Verify we're on the lobby screen
-        const currentScreen = document.querySelector('.screen.active');
-        console.log('Current active screen:', currentScreen ? currentScreen.id : 'none');
-        
         const displayElement = document.getElementById('display-room-code');
         const playerCountElement = document.getElementById('player-count');
         
@@ -325,11 +485,9 @@ class BotOrNotGame {
             
             playerCard.className = cardClass;
             
-            // Show if this is the current player
             const isCurrentPlayer = player.id === this.playerId;
             const playerIndicator = isCurrentPlayer ? ' (You)' : '';
             
-            // Show player status
             let statusText = 'Ready';
             if (!player.alive) {
                 statusText = 'Eliminated';
@@ -343,23 +501,21 @@ class BotOrNotGame {
         });
         
         const startButton = document.getElementById('start-game');
-        if (startButton) {
+        const leaveButton = document.getElementById('leave-room');
+        const minPlayersElement = document.querySelector('.min-players');
+        
+        if (startButton && leaveButton && minPlayersElement) {
+            // Show leave button
+            leaveButton.style.display = 'inline-block';
+            
             if (this.gameState.can_start) {
                 startButton.disabled = false;
-                const minPlayersElement = document.querySelector('.min-players');
-                if (minPlayersElement) {
-                    minPlayersElement.textContent = 'Ready to start!';
-                }
+                minPlayersElement.textContent = 'Ready to start!';
             } else {
                 startButton.disabled = true;
-                const minPlayersElement = document.querySelector('.min-players');
-                if (minPlayersElement) {
-                    minPlayersElement.textContent = 'Need at least 4 players to start';
-                }
+                minPlayersElement.textContent = `Need at least ${this.gameState.min_players || 2} players to start`;
             }
         }
-        
-        console.log('Lobby update complete'); // Debug log
     }
 
     isPlayerAlive() {
@@ -650,7 +806,6 @@ class BotOrNotGame {
             announcement.style.color = '#4CAF50';
         }
         
-        // Show final player status with both anonymous and real names
         let resultsHTML = '<h3>Final Results:</h3>';
         this.gameState.players.forEach(player => {
             const status = player.alive ? 'Survived' : 'Eliminated';
@@ -664,7 +819,6 @@ class BotOrNotGame {
         
         finalResults.innerHTML = resultsHTML;
         
-        // Clear timer and hide spectator mode
         this.clearTimer();
         this.hideSpectatorMode();
     }
