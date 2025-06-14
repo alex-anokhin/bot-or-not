@@ -531,6 +531,84 @@ textarea:focus {
     100% { transform: rotate(360deg); }
 }
 
+/* Spectator Mode */
+.spectator-overlay {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: rgba(0, 0, 0, 0.85);
+    color: white;
+    padding: 1rem;
+    border-radius: 10px;
+    z-index: 1500;
+    max-width: 200px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(10px);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    font-size: 0.85rem;
+}
+
+.spectator-content {
+    text-align: center;
+}
+
+.spectator-icon {
+    font-size: 1.5rem;
+    margin-bottom: 0.25rem;
+}
+
+.spectator-content h3 {
+    color: #ff9800;
+    margin-bottom: 0.25rem;
+    font-size: 0.9rem;
+}
+
+.spectator-content p {
+    color: rgba(255, 255, 255, 0.9);
+    margin-bottom: 0.5rem;
+    font-size: 0.8rem;
+}
+
+.spectator-stats {
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.stat {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.25rem;
+    font-size: 0.75rem;
+}
+
+.stat-label {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.stat-value {
+    color: #4CAF50;
+    font-weight: bold;
+}
+
+.spectator-note {
+    color: #ff9800 !important;
+    font-style: italic;
+    font-size: 0.85rem !important;
+    margin-top: 0.5rem;
+}
+
+/* Responsive spectator overlay */
+@media (max-width: 768px) {
+    .spectator-overlay {
+        position: fixed;
+        top: 10px;
+        right: 10px;
+        left: auto;
+        max-width: 180px;
+    }
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
     .container {

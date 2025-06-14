@@ -315,15 +315,29 @@ class BotOrNotGame {
         
         this.gameState.players.forEach(player => {
             const playerCard = document.createElement('div');
-            playerCard.className = 'player-card alive';
+            let cardClass = 'player-card';
+            
+            if (player.alive) {
+                cardClass += ' alive';
+            } else {
+                cardClass += ' eliminated';
+            }
+            
+            playerCard.className = cardClass;
             
             // Show if this is the current player
             const isCurrentPlayer = player.id === this.playerId;
             const playerIndicator = isCurrentPlayer ? ' (You)' : '';
             
+            // Show player status
+            let statusText = 'Ready';
+            if (!player.alive) {
+                statusText = 'Eliminated';
+            }
+            
             playerCard.innerHTML = `
                 <div class="player-name">${player.name}${playerIndicator}</div>
-                <div class="player-status">Ready</div>
+                <div class="player-status">${statusText}</div>
             `;
             playersList.appendChild(playerCard);
         });
@@ -348,48 +362,173 @@ class BotOrNotGame {
         console.log('Lobby update complete'); // Debug log
     }
 
+    isPlayerAlive() {
+        if (!this.gameState || !this.playerId) return false;
+        const currentPlayer = this.gameState.players.find(p => p.id === this.playerId);
+        return currentPlayer ? currentPlayer.alive : false;
+    }
+
+    showSpectatorMode() {
+        // Add a small, non-intrusive spectator notification
+        const existingOverlay = document.getElementById('spectator-overlay');
+        if (existingOverlay) {
+            existingOverlay.remove();
+        }
+
+        const overlay = document.createElement('div');
+        overlay.id = 'spectator-overlay';
+        overlay.className = 'spectator-overlay';
+        overlay.innerHTML = `
+            <div class="spectator-content">
+                <div class="spectator-icon">👻</div>
+                <h3>Spectator Mode</h3>
+                <p>You've been eliminated</p>
+                <div class="spectator-stats">
+                    <div class="stat">
+                        <span class="stat-label">Alive:</span>
+                        <span class="stat-value">${this.gameState.alive_players}</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Round:</span>
+                        <span class="stat-value">${this.gameState.current_round}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // document.body.appendChild(overlay);
+    }
+
+    hideSpectatorMode() {
+        const overlay = document.getElementById('spectator-overlay');
+        if (overlay) {
+            overlay.remove();
+        }
+    }
+
+    showGame() {
+        this.showScreen('game-screen');
+        this.showResponsePhase();
+        this.updateGameHeader();
+        
+        // Check if player is eliminated and show spectator mode
+        if (!this.isPlayerAlive()) {
+            this.showSpectatorMode();
+        }
+    }
+    
+    showResponsePhase() {
+        document.getElementById('response-phase').classList.remove('hidden');
+        document.getElementById('voting-phase').classList.add('hidden');
+        document.getElementById('results-phase').classList.add('hidden');
+        
+        if (this.gameState) {
+            document.getElementById('game-prompt').textContent = this.gameState.prompt;
+            this.updateResponsesStatus();
+        }
+        
+        // Check if player is alive to enable/disable interactions
+        const isAlive = this.isPlayerAlive();
+        const responseInput = document.getElementById('response-input');
+        const submitButton = document.getElementById('submit-response');
+        
+        if (isAlive) {
+            // Reset response input for alive players
+            responseInput.value = '';
+            responseInput.disabled = false;
+            responseInput.placeholder = "Type your response here...";
+            submitButton.disabled = false;
+            this.hideSpectatorMode();
+        } else {
+            // Disable for eliminated players
+            responseInput.value = ''; // Clear any existing text
+            responseInput.disabled = true;
+            responseInput.placeholder = "You are eliminated - watching as spectator";
+            submitButton.disabled = true;
+            this.showSpectatorMode();
+        }
+        
+        this.updateCharacterCount();
+    }
+    
+    showVotingPhase() {
+        document.getElementById('response-phase').classList.add('hidden');
+        document.getElementById('voting-phase').classList.remove('hidden');
+        document.getElementById('results-phase').classList.add('hidden');
+        
+        this.displayResponses();
+        this.updateGameHeader();
+        
+        // Show/hide spectator mode based on player status
+        if (!this.isPlayerAlive()) {
+            this.showSpectatorMode();
+        } else {
+            this.hideSpectatorMode();
+        }
+    }
+    
     displayResponses() {
         if (!this.gameState || !this.gameState.responses) return;
         
         const responsesDiv = document.getElementById('responses-display');
         responsesDiv.innerHTML = '';
         
+        const isAlive = this.isPlayerAlive();
+        
         // Create header
         const headerDiv = document.createElement('div');
         headerDiv.className = 'voting-header';
-        headerDiv.innerHTML = '<h4>Click on a response to vote KICK that player:</h4>';
+        
+        if (isAlive) {
+            headerDiv.innerHTML = '<h4>Click on a response to vote KICK that player:</h4>';
+        } else {
+            headerDiv.innerHTML = '<h4>Responses from remaining players:</h4><p class="spectator-note">You are watching as a spectator</p>';
+        }
+        
         responsesDiv.appendChild(headerDiv);
         
         this.gameState.responses.forEach((response, index) => {
             // Find the player who wrote this response
             const player = this.gameState.players.find(p => p.id === response.player_id);
-            const playerName = player ? player.name : `Player ${index + 1}`;
+            
+            // Use anonymous display name during game phases
+            const playerName = player ? (player.display_name || `Player ${player.anonymous_number || index + 1}`) : `Player ${index + 1}`;
             
             const responseDiv = document.createElement('div');
-            responseDiv.className = 'response-item clickable';
-            responseDiv.innerHTML = `
-                <div class="response-text">${response.text}</div>
-                <div class="response-author">Response ${index + 1}</div>
-                <div class="vote-hint">Click to vote KICK</div>
-            `;
+            responseDiv.className = 'response-item';
             
-            // Only allow voting on other players' responses
-            if (response.player_id !== this.playerId) {
+            // Only make clickable for alive players voting on others
+            if (isAlive && response.player_id !== this.playerId) {
+                responseDiv.classList.add('clickable');
+                responseDiv.innerHTML = `
+                    <div class="response-text">${response.text}</div>
+                    <div class="response-author">Response ${index + 1} by ${playerName}</div>
+                    <div class="vote-hint">Click to vote KICK</div>
+                `;
+                
                 responseDiv.addEventListener('click', () => {
                     this.selectResponseVote(responseDiv, response.player_id);
                 });
-            } else {
+            } else if (response.player_id === this.playerId) {
+                // Own response
                 responseDiv.classList.add('own-response');
                 responseDiv.innerHTML = `
                     <div class="response-text">${response.text}</div>
                     <div class="response-author">Response ${index + 1} by ${playerName} (Your response)</div>
+                `;
+            } else {
+                // Spectator view - just show the response
+                responseDiv.classList.add('spectator-view');
+                responseDiv.innerHTML = `
+                    <div class="response-text">${response.text}</div>
+                    <div class="response-author">Response ${index + 1} by ${playerName}</div>
                 `;
             }
             
             responsesDiv.appendChild(responseDiv);
         });
     }
-    
+
     selectResponseVote(responseElement, playerId) {
         // Remove previous selection
         document.querySelectorAll('.response-item').forEach(item => {
@@ -404,6 +543,55 @@ class BotOrNotGame {
         this.submitVote(playerId);
     }
 
+    showResults(results) {
+        document.getElementById('response-phase').classList.add('hidden');
+        document.getElementById('voting-phase').classList.add('hidden');
+        document.getElementById('results-phase').classList.remove('hidden');
+        
+        const resultsDiv = document.getElementById('results-content');
+        let resultsHTML = '';
+        
+        if (results.eliminated_player) {
+            const wasAI = results.eliminated_player.is_ai;
+            // Show both anonymous name and real name in results
+            const displayName = results.eliminated_player.display_name || results.eliminated_player.name;
+            const realName = results.eliminated_player.name;
+            const nameDisplay = displayName !== realName ? `${displayName} (${realName})` : displayName;
+            
+            resultsHTML += `
+                <div class="elimination-result">
+                    <h4>${nameDisplay} was eliminated!</h4>
+                    <p>${wasAI ? '🎉 It was the AI! Good job!' : '😬 It was a human player...'}</p>
+                </div>
+            `;
+        } else {
+            resultsHTML += `
+                <div class="elimination-result">
+                    <h4>No one was eliminated this round</h4>
+                    <p>Not enough votes to eliminate anyone</p>
+                </div>
+            `;
+        }
+        
+        resultsHTML += '<div class="vote-summary"><h4>Vote Summary:</h4>';
+        for (const [playerId, voteCount] of Object.entries(results.vote_counts)) {
+            const player = this.gameState.players.find(p => p.id === playerId);
+            if (player) {
+                const displayName = player.display_name || player.name;
+                resultsHTML += `<p>${displayName}: ${voteCount} votes</p>`;
+            }
+        }
+        resultsHTML += '</div>';
+        
+        resultsDiv.innerHTML = resultsHTML;
+        this.updateGameHeader();
+        
+        // Update spectator mode if player was just eliminated
+        if (!this.isPlayerAlive()) {
+            this.showSpectatorMode();
+        }
+    }
+    
     startTimer() {
         this.clearTimer();
         
@@ -447,45 +635,7 @@ class BotOrNotGame {
             }
         }
     }
-    
-    showResults(results) {
-        document.getElementById('response-phase').classList.add('hidden');
-        document.getElementById('voting-phase').classList.add('hidden');
-        document.getElementById('results-phase').classList.remove('hidden');
-        
-        const resultsDiv = document.getElementById('results-content');
-        let resultsHTML = '';
-        
-        if (results.eliminated_player) {
-            const wasAI = results.eliminated_player.is_ai;
-            resultsHTML += `
-                <div class="elimination-result">
-                    <h4>${results.eliminated_player.name} was eliminated!</h4>
-                    <p>${wasAI ? '🎉 It was the AI! Good job!' : '😬 It was a human player...'}</p>
-                </div>
-            `;
-        } else {
-            resultsHTML += `
-                <div class="elimination-result">
-                    <h4>No one was eliminated this round</h4>
-                    <p>Not enough votes to eliminate anyone</p>
-                </div>
-            `;
-        }
-        
-        resultsHTML += '<div class="vote-summary"><h4>Vote Summary:</h4>';
-        for (const [playerId, voteCount] of Object.entries(results.vote_counts)) {
-            const player = this.gameState.players.find(p => p.id === playerId);
-            if (player) {
-                resultsHTML += `<p>${player.name}: ${voteCount} votes</p>`;
-            }
-        }
-        resultsHTML += '</div>';
-        
-        resultsDiv.innerHTML = resultsHTML;
-        this.updateGameHeader();
-    }
-    
+
     showGameOver(winner) {
         this.showScreen('game-over-screen');
         
@@ -500,45 +650,65 @@ class BotOrNotGame {
             announcement.style.color = '#4CAF50';
         }
         
-        // Show final player status
+        // Show final player status with both anonymous and real names
         let resultsHTML = '<h3>Final Results:</h3>';
         this.gameState.players.forEach(player => {
             const status = player.alive ? 'Survived' : 'Eliminated';
             const type = player.is_ai ? '🤖 AI' : '👤 Human';
-            resultsHTML += `<p><strong>${player.name}</strong> - ${type} - ${status}</p>`;
+            const displayName = player.display_name || player.name;
+            const realName = player.name;
+            const nameDisplay = displayName !== realName ? `${displayName} (${realName})` : displayName;
+            
+            resultsHTML += `<p><strong>${nameDisplay}</strong> - ${type} - ${status}</p>`;
         });
         
         finalResults.innerHTML = resultsHTML;
         
-        // Clear timer
+        // Clear timer and hide spectator mode
         this.clearTimer();
+        this.hideSpectatorMode();
     }
     
-    startTimer() {
+    resetGame() {
+        // Clear all game state first
+        this.gameState = null;
+        this.playerId = null;
+        this.roomId = null;
+        this.selectedVoteTarget = null;
+        
+        // Close websocket connection
+        if (this.websocket) {
+            this.websocket.close();
+            this.websocket = null;
+        }
+        
+        // Clear timer
         this.clearTimer();
         
-        if (!this.gameState || !this.gameState.timer_end) return;
+        // Hide spectator mode
+        this.hideSpectatorMode();
         
-        const endTime = new Date(this.gameState.timer_end);
+        // Reset form inputs
+        document.getElementById('player-name').value = '';
+        document.getElementById('room-code').value = '';
+        document.getElementById('player-form').classList.add('hidden');
         
-        this.timer = setInterval(() => {
-            const now = new Date();
-            const remaining = Math.max(0, Math.floor((endTime - now) / 1000));
-            
-            const timerElement = document.getElementById('timer');
-            timerElement.textContent = `${remaining}s`;
-            
-            if (remaining <= 10) {
-                timerElement.classList.add('warning');
-            } else {
-                timerElement.classList.remove('warning');
-            }
-            
-            if (remaining <= 0) {
-                this.clearTimer();
-                timerElement.textContent = 'Time up!';
-            }
-        }, 1000);
+        // Reset response input
+        const responseInput = document.getElementById('response-input');
+        responseInput.value = '';
+        responseInput.disabled = false;
+        responseInput.placeholder = "Type your response here...";
+        
+        // Enable submit button
+        const submitButton = document.getElementById('submit-response');
+        submitButton.disabled = false;
+        
+        // Force screen transition to welcome
+        console.log('Resetting game and showing welcome screen');
+        this.showScreen('welcome-screen');
+        
+        // Show confirmation toast
+        this.showToast('Starting new game...', 'success');
     }
     
     clearTimer() {
@@ -546,26 +716,13 @@ class BotOrNotGame {
             clearInterval(this.timer);
             this.timer = null;
         }
-    }
-    
-    resetGame() {
-        this.gameState = null;
-        this.playerId = null;
-        this.roomId = null;
         
-        if (this.websocket) {
-            this.websocket.close();
-            this.websocket = null;
+        // Clear timer display
+        const timerElement = document.getElementById('timer');
+        if (timerElement) {
+            timerElement.textContent = '';
+            timerElement.classList.remove('warning');
         }
-        
-        this.clearTimer();
-        
-        // Reset form
-        document.getElementById('player-name').value = '';
-        document.getElementById('room-code').value = '';
-        document.getElementById('player-form').classList.add('hidden');
-        
-        this.showScreen('welcome-screen');
     }
     
     updateUI() {
@@ -638,6 +795,11 @@ class BotOrNotGame {
         this.showScreen('game-screen');
         this.showResponsePhase();
         this.updateGameHeader();
+        
+        // Check if player is eliminated and show spectator mode
+        if (!this.isPlayerAlive()) {
+            this.showSpectatorMode();
+        }
     }
     
     updateGameHeader() {
@@ -667,10 +829,27 @@ class BotOrNotGame {
             this.updateResponsesStatus();
         }
         
-        // Reset response input
-        document.getElementById('response-input').value = '';
-        document.getElementById('response-input').disabled = false;
-        document.getElementById('submit-response').disabled = false;
+        // Check if player is alive to enable/disable interactions
+        const isAlive = this.isPlayerAlive();
+        const responseInput = document.getElementById('response-input');
+        const submitButton = document.getElementById('submit-response');
+        
+        if (isAlive) {
+            // Reset response input for alive players
+            responseInput.value = '';
+            responseInput.disabled = false;
+            responseInput.placeholder = "Type your response here...";
+            submitButton.disabled = false;
+            this.hideSpectatorMode();
+        } else {
+            // Disable for eliminated players
+            responseInput.value = ''; // Clear any existing text
+            responseInput.disabled = true;
+            responseInput.placeholder = "You are eliminated - watching as spectator";
+            submitButton.disabled = true;
+            this.showSpectatorMode();
+        }
+        
         this.updateCharacterCount();
     }
     
@@ -748,6 +927,13 @@ class BotOrNotGame {
         
         this.displayResponses();
         this.updateGameHeader();
+        
+        // Show/hide spectator mode based on player status
+        if (!this.isPlayerAlive()) {
+            this.showSpectatorMode();
+        } else {
+            this.hideSpectatorMode();
+        }
     }
     
     async submitVote(targetPlayerId) {
