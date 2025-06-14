@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  bot-or-not-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ENVIRONMENT=development
+    env_file:
+      - .env
+    volumes:
+      - .:/app  # Mount entire project for hot reload
+      - /app/.venv  # Exclude virtual environment
+    command: ["uv", "run", "python", "run.py"]
+    restart: unless-stopped
+
+networks:
+  default:
+    name: bot-or-not-dev-network

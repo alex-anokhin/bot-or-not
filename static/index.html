@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bot or Not - Social Deduction Game</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Welcome Screen -->
+        <div id="welcome-screen" class="screen active">
+            <div class="container">
+                <h1>🤖 Bot or Not</h1>
+                <p class="subtitle">Can you spot the AI among your friends?</p>
+                <div class="game-info">
+                    <p>👥 4-6 players • 🎯 Find the AI • 💭 Creative responses</p>
+                </div>
+                
+                <div class="action-buttons">
+                    <button id="create-room-btn" class="btn btn-primary">Create Room</button>
+                    <button id="join-room-btn" class="btn btn-secondary">Join Room</button>
+                </div>
+                
+                <div id="player-form" class="form-section hidden">
+                    <input type="text" id="player-name" placeholder="Enter your name" maxlength="20">
+                    <input type="text" id="room-code" placeholder="Enter room code (e.g., room_123456)" maxlength="15">
+                    <button id="submit-player" class="btn btn-primary">Continue</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lobby Screen -->
+        <div id="lobby-screen" class="screen">
+            <div class="container">
+                <h2>Game Lobby</h2>
+                <div class="room-info">
+                    <h3>Share this room code with friends:</h3>
+                    <div class="room-code">
+                        <span id="display-room-code" class="code">Loading...</span>
+                        <button id="copy-code" class="btn btn-small">📋 Copy</button>
+                    </div>
+                    <p class="share-instruction">
+                        Friends can join by clicking "Join Room" on the main page and entering this code.
+                    </p>
+                </div>
+                
+                <div class="players-section">
+                    <h3>Players (<span id="player-count">0</span>/6)</h3>
+                    <div id="players-list" class="players-grid">
+                        <!-- Players will be populated here -->
+                    </div>
+                </div>
+                
+                <div class="lobby-actions">
+                    <button id="start-game" class="btn btn-primary" disabled>Start Game</button>
+                    <p class="min-players">Need at least 4 players to start</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="game-screen" class="screen">
+            <div class="container">
+                <!-- Game Header -->
+                <div class="game-header">
+                    <div class="round-info">
+                        Round <span id="current-round">1</span>
+                    </div>
+                    <div class="phase-info">
+                        <span id="current-phase">Response Phase</span>
+                        <div class="timer" id="timer">60s</div>
+                    </div>
+                    <div class="players-alive">
+                        <span id="alive-count">6</span> players alive
+                    </div>
+                </div>
+
+                <!-- Game Content -->
+                <div id="response-phase" class="game-phase">
+                    <div class="prompt-section">
+                        <h3>Prompt:</h3>
+                        <p id="game-prompt" class="prompt-text"></p>
+                    </div>
+                    
+                    <div class="response-section">
+                        <textarea 
+                            id="response-input" 
+                            placeholder="Type your response here..." 
+                            maxlength="180"
+                            rows="3"></textarea>
+                        <div class="char-counter">
+                            <span id="char-count">0</span>/180 characters
+                        </div>
+                        <button id="submit-response" class="btn btn-primary">Submit Response</button>
+                    </div>
+
+                    <div class="responses-waiting">
+                        <p>Waiting for other players...</p>
+                        <div id="responses-status" class="responses-status"></div>
+                    </div>
+                </div>
+
+                <div id="voting-phase" class="game-phase hidden">
+                    <div class="voting-header">
+                        <h3>Voting Phase</h3>
+                        <p>Read the responses and vote to KICK the player you think is the AI</p>
+                    </div>
+                    
+                    <div id="responses-display" class="responses-display"></div>
+                    
+                    <div class="voting-section">
+                        <h4>Cast Your Vote:</h4>
+                        <div id="voting-options" class="voting-options"></div>
+                    </div>
+                </div>
+
+                <div id="results-phase" class="game-phase hidden">
+                    <div class="results-header">
+                        <h3>Round Results</h3>
+                    </div>
+                    <div id="results-content" class="results-content"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Over Screen -->
+        <div id="game-over-screen" class="screen">
+            <div class="container">
+                <div class="game-over-content">
+                    <h2 id="winner-announcement"></h2>
+                    <div id="final-results" class="final-results"></div>
+                    <div class="game-over-actions">
+                        <button id="new-game" class="btn btn-primary">New Game</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Error/Status Messages -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay hidden">
+        <div class="loading-spinner"></div>
+        <p>Loading...</p>
+    </div>
+
+    <script src="/static/script.js"></script>
+</body>
+</html>

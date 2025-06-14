@@ -1,0 +1,120 @@
+# Project Setup: "Bot or Not" Game
+
+## Initial Prompt for Copilot
+
+Create a multiplayer social deduction game called "Bot or Not" with the following specifications:
+
+### Game Overview
+- **Players:** 4-6 total (3-5 humans + 1 AI bot)
+- **Goal:** Humans try to identify and eliminate the AI before it reaches final 2 players
+- **Format:** Turn-based rounds with text responses to prompts
+
+### Technical Stack
+- **Backend:** FastAPI with WebSocket support
+- **Frontend:** HTML, CSS, JavaScript (vanilla)
+- **AI Integration:** OpenAI API for bot responses
+- **Data Storage:** In-memory (Python dictionaries)
+
+### Project Structure
+```
+bot-or-not/
+├── main.py                 # FastAPI server with WebSocket endpoints
+├── game_logic.py          # Game state management and rules
+├── ai_bot.py              # OpenAI API integration for bot responses
+├── static/
+│   ├── index.html         # Main game interface
+│   ├── style.css          # Game styling
+│   └── script.js          # Frontend game logic and WebSocket handling
+├── requirements.txt       # Python dependencies
+└── .env                   # Environment variables (OpenAI API key)
+```
+
+### Core Features to Implement
+
+#### 1. Game Flow
+- Room creation with unique room codes
+- Player joining (up to 6 players)
+- Two-phase rounds:
+  - **Response Phase (60s):** Players respond to prompts privately
+  - **Voting Phase (60s):** All responses revealed, players vote to kick/trust
+- Win condition detection (AI eliminated = humans win, AI in final 2 = AI wins)
+
+#### 2. Backend Endpoints (FastAPI)
+```python
+# WebSocket connection for real-time game updates
+@app.websocket("/ws/{room_id}/{player_id}")
+
+# REST endpoints
+POST /create-room          # Create new game room
+POST /join-room           # Join existing room
+GET /room/{room_id}       # Get room status
+```
+
+#### 3. Frontend Features
+- Lobby screen with room code sharing
+- Game board showing all players
+- Prompt display with character counter (140-180 chars)
+- Response input with timer
+- Response reveal screen
+- Voting interface (kick/trust buttons)
+- Game results and winner announcement
+
+#### 4. AI Bot Integration
+- Integrate OpenAI API to generate human-like responses
+- Bot should receive prompt + other player responses
+- Generate responses that blend in with human players
+- Character limit enforcement (140-180 chars)
+
+### Game State Management
+```python
+game_state = {
+    "room_id": str,
+    "players": [{"id": str, "name": str, "is_ai": bool, "alive": bool}],
+    "current_round": int,
+    "phase": "waiting|response|voting|results",
+    "prompt": str,
+    "responses": [{"player_id": str, "text": str}],
+    "votes": [{"voter_id": str, "target_id": str, "type": "kick|trust"}],
+    "ai_player_id": str,
+    "timer_end": timestamp
+}
+```
+
+### Sample Prompts
+Include these starter prompts in the game:
+- "You're a ghost haunting your old workplace. What do you do first?"
+- "You can only communicate through interpretive dance for a day. How do you order coffee?"
+- "You're stuck in an elevator with your worst enemy. What's your opening line?"
+- "You discover you can talk to animals, but they're all very gossipy. What do you learn first?"
+
+### Dependencies (requirements.txt)
+```
+fastapi==0.104.1
+uvicorn==0.24.0
+websockets==12.0
+openai==1.3.0
+python-dotenv==1.0.0
+python-multipart==0.0.6
+```
+
+### Environment Setup
+- Set up `.env` file for OpenAI API key
+- Configure FastAPI to serve static files
+- WebSocket connection handling for real-time updates
+- Timer management for game phases
+
+### UI/UX Requirements
+- Clean, mobile-friendly interface
+- Real-time updates without page refresh
+- Visual feedback for game phases and timers
+- Responsive design for 4-6 player cards
+- Clear voting interface with confirmation
+
+### Start with MVP Features
+1. Basic room creation and joining
+2. Simple prompt/response cycle
+3. Manual game flow (no timers initially)
+4. In-memory game state
+5. Basic AI integration
+
+Please create the initial project structure with placeholder files and basic FastAPI setup. Include detailed comments explaining the game flow and WebSocket message structure.

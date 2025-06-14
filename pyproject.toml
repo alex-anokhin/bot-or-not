@@ -1,0 +1,40 @@
+[project]
+name = "bot-or-not"
+version = "0.1.0"
+description = "Social deduction game where humans try to identify AI"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi==0.104.1",
+    "uvicorn[standard]==0.24.0",
+    "websockets==12.0",
+    "openai>=1.30.0",
+    "python-dotenv==1.0.0",
+    "python-multipart==0.0.6",
+    "aiofiles==23.2.1",
+    "httpx>=0.25.0",
+]
+
+[project.scripts]
+bot-or-not = "bot_or_not.main:main"
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-asyncio",
+    "httpx",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["bot_or_not"]
+
+[tool.uv]
+dev-dependencies = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+    "httpx>=0.25.0",
+]
