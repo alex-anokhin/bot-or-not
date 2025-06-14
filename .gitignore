@@ -33,3 +33,6 @@ logs/
 *.db
 *.sqlite
 *.sqlite3
+
+# Node modules (if you add any JS dependencies later)
+node_modules/
