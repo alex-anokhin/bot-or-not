@@ -141,3 +141,111 @@ bot-or-not/
 ## License
 
 MIT License - see LICENSE file for details
+
+## Production Deployment with SSL
+
+### Prerequisites
+
+- VPS with Docker and Docker Compose
+- Domain name pointing to your VPS
+- OpenAI API key
+
+### Quick Production Setup
+
+1. **Clone repository on your VPS:**
+```bash
+git clone <your-repo-url>
+cd bot-or-not
+```
+
+2. **Configure environment:**
+```bash
+cp .env.prod.example .env.prod
+# Edit .env.prod with your values:
+# - OPENAI_API_KEY
+# - DOMAIN (your domain name)
+# - ACME_EMAIL (your email for Let's Encrypt)
+```
+
+3. **Update Traefik email:**
+```bash
+# Edit traefik/traefik.yml and change:
+# email: your-email@example.com
+```
+
+4. **Deploy:**
+```bash
+chmod +x deploy.sh
+./deploy.sh
+```
+
+5. **Verify deployment:**
+```bash
+# Check services are running
+docker-compose -f docker-compose.prod.yml ps
+
+# Check logs
+docker-compose -f docker-compose.prod.yml logs -f
+
+# Check SSL certificate
+curl -I https://yourdomain.com
+```
+
+### Domain Setup
+
+1. **Point your domain to your VPS IP:**
+```
+A record: yourdomain.com → YOUR_VPS_IP
+A record: traefik.yourdomain.com → YOUR_VPS_IP (optional, for dashboard)
+```
+
+2. **Wait for DNS propagation** (up to 24 hours)
+
+3. **SSL certificates will be automatically generated** by Let's Encrypt
+
+### Production Commands
+
+```bash
+# Start services
+docker-compose -f docker-compose.prod.yml up -d
+
+# Stop services
+docker-compose -f docker-compose.prod.yml down
+
+# View logs
+docker-compose -f docker-compose.prod.yml logs -f bot-or-not
+
+# Update application
+git pull
+docker-compose -f docker-compose.prod.yml up -d --build
+
+# Backup SSL certificates
+sudo cp traefik/acme.json ~/acme.json.backup
+```
+
+### Security Notes
+
+- Remove Traefik dashboard in production (port 8080)
+- Use strong passwords for any admin interfaces
+- Regularly update Docker images
+- Monitor logs for security issues
+
+### Troubleshooting
+
+**SSL Certificate Issues:**
+```bash
+# Check Traefik logs
+docker-compose -f docker-compose.prod.yml logs traefik
+
+# Verify domain points to server
+dig yourdomain.com
+
+# Test HTTP challenge
+curl -v http://yourdomain.com/.well-known/acme-challenge/test
+```
+
+**WebSocket Issues:**
+```bash
+# Test WebSocket connection
+wscat -c wss://yourdomain.com/ws/test/test
+```

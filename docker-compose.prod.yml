@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  traefik:
+    image: traefik:v3.0
+    container_name: traefik
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080"  # Traefik dashboard (optional, remove in production)
+    environment:
+      - TRAEFIK_API_DASHBOARD=true
+      - TRAEFIK_API_INSECURE=true  # Remove in production
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+      - ./traefik/acme.json:/acme.json
+      - ./traefik/dynamic:/etc/traefik/dynamic:ro
+    networks:
+      - web
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.traefik.rule=Host(`traefik.${DOMAIN}`)"
+      - "traefik.http.routers.traefik.tls=true"
+      - "traefik.http.routers.traefik.tls.certresolver=letsencrypt"
+
+  bot-or-not:
+    build: .
+    container_name: bot-or-not-app
+    restart: unless-stopped
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ENVIRONMENT=production
+      - PORT=8000
+      - HOST=0.0.0.0
+    volumes:
+      - ./static:/app/static:ro
+    networks:
+      - web
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.bot-or-not.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.bot-or-not.tls=true"
+      - "traefik.http.routers.bot-or-not.tls.certresolver=letsencrypt"
+      - "traefik.http.services.bot-or-not.loadbalancer.server.port=8000"
+      # WebSocket support
+      - "traefik.http.routers.bot-or-not-ws.rule=Host(`${DOMAIN}`) && PathPrefix(`/ws`)"
+      - "traefik.http.routers.bot-or-not-ws.tls=true"
+      - "traefik.http.routers.bot-or-not-ws.tls.certresolver=letsencrypt"
+    depends_on:
+      - traefik
+
+networks:
+  web:
+    external: true
